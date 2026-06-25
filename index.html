@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SentinelAI — Early Warning System</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.x/tabler-icons.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #ffffff; --bg2: #f5f5f5; --bg3: #eeeeee;
+      --text: #111111; --text2: #555555; --text3: #888888;
+      --border: #dddddd; --blue: #1e3a5f; --radius: 12px;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg3); color: var(--text); min-height: 100vh; }
+    .page { max-width: 660px; margin: 0 auto; padding: 2rem 1rem 4rem; }
+
+    /* header */
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+    .logo { font-size: 20px; font-weight: 600; color: var(--blue); display: flex; align-items: center; gap: 8px; }
+    .badge-online { font-size: 11px; padding: 4px 10px; border-radius: 20px; background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; font-weight: 500; }
+
+    /* card */
+    .card { background: var(--bg); border-radius: var(--radius); border: 1px solid var(--border); padding: 1.25rem; margin-bottom: 1rem; }
+
+    /* instagram input */
+    .ig-label { font-size: 13px; color: var(--text2); margin-bottom: 8px; display: block; }
+    .ig-row { display: flex; gap: 8px; }
+    .ig-input { flex: 1; padding: 10px 14px; border-radius: 8px; border: 1.5px solid var(--border); font-size: 14px; color: var(--text); background: var(--bg2); outline: none; transition: border 0.2s; }
+    .ig-input:focus { border-color: var(--blue); background: #fff; }
+    .ig-btn { padding: 10px 18px; border-radius: 8px; border: none; background: var(--blue); color: white; font-size: 14px; font-weight: 500; cursor: pointer; white-space: nowrap; }
+    .ig-btn:hover { background: #162d4a; }
+    .ig-hint { font-size: 11px; color: var(--text3); margin-top: 6px; }
+
+    /* step bar */
+    .steps { display: flex; align-items: center; gap: 0; background: var(--bg2); border-radius: 10px; padding: 0.75rem 1rem; margin-bottom: 1rem; }
+    .step { display: flex; align-items: center; flex: 1; gap: 6px; }
+    .step-num { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; flex-shrink: 0; }
+    .step-num.done { background: #16a34a; color: white; }
+    .step-num.active { background: var(--blue); color: white; }
+    .step-num.inactive { background: var(--border); color: var(--text3); }
+    .step-label { font-size: 11px; font-weight: 500; }
+    .step-label.active { color: var(--text); }
+    .step-label.inactive { color: var(--text3); }
+    .step-line { flex: 1; height: 1px; background: var(--border); margin: 0 6px; }
+    .step-line.done { background: #16a34a; }
+
+    /* signal rows */
+    .sig-row { width: 100%; text-align: left; padding: 0.75rem 1rem; background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 6px; transition: border 0.15s; }
+    .sig-row.open { border-radius: 10px 10px 0 0; background: #fff8f8; border-color: #fca5a5; }
+    .sig-row.open.safe { background: #f8fff8; border-color: #86efac; }
+    .sig-expand { padding: 0.75rem 1rem; border: 1px solid #fca5a5; border-top: none; border-radius: 0 0 10px 10px; margin-bottom: 6px; background: #fff8f8; font-size: 13px; color: #7f1d1d; line-height: 1.7; }
+    .sig-expand.safe { background: #f8fff8; border-color: #86efac; color: #14532d; }
+
+    /* score */
+    .score-big { font-size: 64px; font-weight: 600; line-height: 1; }
+    .risk-pill { display: inline-block; padding: 5px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; color: white; }
+
+    /* action buttons */
+    .action-btn { width: 100%; text-align: left; padding: 0.875rem 1rem; border-radius: 10px; border: 1px solid var(--border); background: var(--bg2); cursor: pointer; display: flex; align-items: center; gap: 12px; margin-bottom: 8px; transition: border 0.15s, background 0.15s; }
+    .action-btn.selected { border-width: 2px; }
+    .action-icon { font-size: 20px; }
+    .action-label { font-size: 13px; font-weight: 500; }
+    .action-desc { font-size: 11px; color: var(--text3); }
+
+    /* buttons */
+    .btn-primary { width: 100%; padding: 13px; font-size: 15px; font-weight: 500; border-radius: 10px; border: none; background: var(--blue); color: white; cursor: pointer; }
+    .btn-primary:hover { background: #162d4a; }
+    .btn-primary:disabled { background: var(--border); color: var(--text3); cursor: not-allowed; }
+    .btn-ghost { padding: 10px 20px; font-size: 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg2); color: var(--text); cursor: pointer; }
+
+    /* privacy note */
+    .privacy { margin-top: 1.5rem; padding: 0.75rem 1rem; background: var(--bg2); border-radius: 8px; font-size: 11px; color: var(--text3); line-height: 1.7; display: flex; gap: 8px; }
+
+    /* done screen */
+    .done-center { text-align: center; padding: 3rem 1rem; }
+    .done-icon { font-size: 56px; color: #16a34a; }
+
+    /* log */
+    .log-entry { padding: 0.75rem 1rem; background: var(--bg2); border-radius: 10px; margin-bottom: 6px; font-size: 12px; }
+
+    /* info box */
+    .info-box { background: var(--bg2); border-radius: 10px; padding: 0.875rem 1rem; margin-bottom: 1rem; font-size: 13px; color: var(--text2); line-height: 1.7; display: flex; gap: 10px; }
+
+    /* disclaimer */
+    .disclaimer { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 0.875rem 1rem; margin-bottom: 1rem; font-size: 12px; color: #1e40af; line-height: 1.7; }
+
+    textarea { width: 100%; min-height: 60px; padding: 8px 10px; font-size: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg2); color: var(--text); resize: vertical; font-family: inherit; margin-bottom: 10px; }
+    textarea:focus { outline: none; border-color: var(--blue); }
+
+    .hidden { display: none; }
+    .tag-danger { font-size: 11px; font-weight: 500; color: #dc2626; }
+    .tag-safe { font-size: 11px; font-weight: 500; color: #16a34a; }
+
+    /* history toggle */
+    .hist-btn { font-size: 12px; padding: 7px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg2); color: var(--text2); cursor: pointer; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="logo"><i class="ti ti-shield-lock"></i> SentinelAI</div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="hist-btn" onclick="toggleLog()"><i class="ti ti-clipboard-list"></i> History (<span id="log-count">0</span>)</button>
+      <span class="badge-online">● Online</span>
+    </div>
+  </div>
+
+  <!-- LOG PANEL -->
+  <div id="log-panel" class="hidden">
+    <div class="card" id="log-content">
+      <p style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--text)">Decision history</p>
+      <p style="font-size:13px;color:var(--text3)">No decisions yet — investigate an account first.</p>
+    </div>
+  </div>
+
+  <!-- SCREEN: HOME -->
+  <div id="screen-home">
+    <div class="card">
+      <p style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:4px">Enter an Instagram account to investigate</p>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.7">Type any Instagram username and SentinelAI will scan its public behavioural signals for risk patterns. No personal data is stored.</p>
+      <label class="ig-label">Instagram username</label>
+      <div class="ig-row">
+        <input id="ig-input" class="ig-input" type="text" placeholder="e.g. john_doe or @john_doe" />
+        <button class="ig-btn" onclick="startAnalysis()"><i class="ti ti-search"></i> Investigate</button>
+      </div>
+      <p class="ig-hint">* This tool uses simulated behavioural data for demonstration purposes. No real Instagram data is accessed.</p>
+    </div>
+
+    <div class="card" style="background:#f8faff;border-color:#dbeafe">
+      <p style="font-size:13px;font-weight:600;color:var(--blue);margin-bottom:10px"><i class="ti ti-info-circle"></i> How SentinelAI works</p>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          <div style="min-width:26px;height:26px;border-radius:50%;background:var(--blue);color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0">1</div>
+          <p style="font-size:13px;color:var(--text2);padding-top:4px">Enter an Instagram username above</p>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          <div style="min-width:26px;height:26px;border-radius:50%;background:var(--blue);color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0">2</div>
+          <p style="font-size:13px;color:var(--text2);padding-top:4px">See the warning signs — tap any to understand what it means in plain English</p>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          <div style="min-width:26px;height:26px;border-radius:50%;background:var(--blue);color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0">3</div>
+          <p style="font-size:13px;color:var(--text2);padding-top:4px">Read the AI risk score — explained in simple language</p>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          <div style="min-width:26px;height:26px;border-radius:50%;background:var(--blue);color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0">4</div>
+          <p style="font-size:13px;color:var(--text2);padding-top:4px">You decide the action — the AI never makes decisions for you</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="privacy">
+      <i class="ti ti-lock" style="font-size:15px;flex-shrink:0;margin-top:1px"></i>
+      <span><strong>Privacy first:</strong> SentinelAI only analyses behaviour patterns — never names, photos, or personal data. No account is ever restricted automatically. A real human always makes the final call. Built for Trust & Safety analysts.</span>
+    </div>
+  </div>
+
+  <!-- SCREEN: SIGNALS -->
+  <div id="screen-signals" class="hidden">
+    <button onclick="goHome()" style="font-size:13px;color:var(--text2);background:none;border:none;cursor:pointer;padding:0 0 1rem;display:flex;align-items:center;gap:6px">
+      <i class="ti ti-arrow-left"></i> Back
+    </button>
+
+    <!-- Step bar -->
+    <div class="steps" id="step-bar"></div>
+
+    <div class="card" id="account-header"></div>
+
+    <div class="disclaimer">
+      <i class="ti ti-info-circle" style="font-size:15px;flex-shrink:0;float:left;margin-right:8px;margin-top:1px"></i>
+      <strong>Tap any signal below</strong> to understand what it means and why it matters — explained in plain English. Then scroll down to see the AI risk score.
+    </div>
+
+    <div id="signals-list"></div>
+
+    <div id="score-section" class="hidden">
+      <div class="card" id="score-card" style="text-align:center;margin-top:0.5rem"></div>
+      <div class="card" id="decision-card"></div>
+    </div>
+
+    <button class="btn-primary" id="btn-show-score" onclick="showScore()" style="margin-top:0.5rem">
+      See AI risk score <i class="ti ti-arrow-right"></i>
+    </button>
+  </div>
+
+  <!-- SCREEN: DONE -->
+  <div id="screen-done" class="hidden">
+    <div class="done-center">
+      <i class="ti ti-circle-check done-icon"></i>
+      <p style="font-size:18px;font-weight:600;color:var(--text);margin:16px 0 8px">Decision saved</p>
+      <div class="card" id="done-summary" style="max-width:400px;margin:0 auto 1.5rem;text-align:left"></div>
+      <p style="font-size:13px;color:var(--text2);margin:0 auto 2rem;max-width:380px;line-height:1.7">Your decision is saved in the history log with a case ID, timestamp, and your reasoning — a clear audit trail of every action taken.</p>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+        <button class="btn-ghost" onclick="goHome()"><i class="ti ti-arrow-left"></i> Investigate another account</button>
+        <button class="btn-primary" style="width:auto;padding:10px 20px" onclick="goHome();toggleLog()"><i class="ti ti-clipboard-list"></i> View history</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── Data ──────────────────────────────────────────────────────
+const SCENARIOS = [
+  {
+    badge:"HIGH DANGER", badgeColor:"#dc2626", badgeBg:"#fff0f0",
+    score:84, scoreLabel:"CRITICAL RISK",
+    signals:[
+      {icon:"ti-calendar",label:"Account is only 3 weeks old",danger:true,why:"Exploiters create brand new accounts so they have no history of bad behaviour. A 3-week-old account combined with other red flags is very suspicious."},
+      {icon:"ti-send",label:"Sent messages to 14 strangers in just 2 days",danger:true,why:"Normal people don't message dozens of strangers at once. Sending mass DMs rapidly is one of the biggest red flags for exploitation."},
+      {icon:"ti-moon",label:"Only active between 11pm and 2am",danger:true,why:"Staying active very late at night while targeting young users is a known danger pattern that predators use."},
+      {icon:"ti-credit-card",label:"Mentioned gift cards 3 times in private chats",danger:true,why:"Asking someone for a gift card is one of the most common exploitation and scam tactics used on social media."},
+      {icon:"ti-shield-off",label:"Using a VPN to hide their real location",danger:true,why:"Hiding location while showing other red flags strongly suggests they are trying to avoid being identified."},
+      {icon:"ti-users",label:"Following 847 accounts — only 1 follows back",danger:true,why:"This shows the account is aggressively trying to contact many people but nobody trusts it enough to follow back."}
+    ],
+    summary:"6 out of 6 signals are danger signs. This account matches a known exploitation pattern. A senior analyst should urgently review this case.",
+    aiSays:"Escalate to senior analyst urgently"
+  },
+  {
+    badge:"MEDIUM RISK", badgeColor:"#d97706", badgeBg:"#fffbeb",
+    score:58, scoreLabel:"HIGH RISK",
+    signals:[
+      {icon:"ti-refresh",label:"Account was inactive for 6 months, suddenly very active",danger:true,why:"Accounts that suddenly wake up after months of silence sometimes mean a bad actor has taken over the account."},
+      {icon:"ti-copy",label:"Sent the exact same message to 22 different people",danger:true,why:"Copy-pasting identical messages to many people is not normal. It usually means a scam or harassment campaign."},
+      {icon:"ti-cash",label:"Shared payment links in private conversations",danger:true,why:"Asking people for money through private messages — especially strangers — is a strong warning sign."},
+      {icon:"ti-alert-circle",label:"1 previous complaint was filed but never resolved",danger:true,why:"Someone already flagged this account before. That complaint was never acted on — which raises the risk significantly."},
+      {icon:"ti-calendar",label:"Account is 8 months old",danger:false,why:"This is not very old, but older than a brand new account. This alone is not a major concern."},
+      {icon:"ti-users",label:"220 followers, 180 following — fairly balanced",danger:false,why:"A balanced follower count looks more like a normal person's account. This is a positive sign."}
+    ],
+    summary:"4 out of 6 signals are concerning. The unresolved past complaint makes this more serious. A human analyst should review before any action.",
+    aiSays:"Flag for human review"
+  },
+  {
+    badge:"LOW RISK", badgeColor:"#16a34a", badgeBg:"#f0fdf4",
+    score:11, scoreLabel:"LOW RISK",
+    signals:[
+      {icon:"ti-calendar",label:"Account is 2 years old",danger:false,why:"A 2-year-old account is well established. Exploiters rarely maintain fake accounts for this long."},
+      {icon:"ti-send",label:"Sent messages to only 3 people this week",danger:false,why:"3 messages in a week is completely normal social behaviour — nothing suspicious here."},
+      {icon:"ti-sun",label:"Active during normal daytime hours",danger:false,why:"Using social media during the day is what most people do. No unusual timing pattern detected."},
+      {icon:"ti-shield-check",label:"No suspicious words or requests detected",danger:false,why:"No gift cards, no urgency language, no requests for personal information. All clear."},
+      {icon:"ti-map-pin",label:"Location is consistent — no VPN detected",danger:false,why:"Not hiding their location. Consistent location is a positive sign."},
+      {icon:"ti-users",label:"340 followers, 290 following — healthy balance",danger:false,why:"Real people are choosing to follow this account back. This is a good sign of a genuine account."}
+    ],
+    summary:"All 6 signals look normal. This account does not match any known exploitation pattern. No action needed — routine monitoring continues.",
+    aiSays:"No action — continue monitoring"
+  }
+];
+
+const ACTIONS = [
+  {id:"close",icon:"ti-circle-check",label:"All clear — no action needed",desc:"The account appears safe",color:"#16a34a",bg:"#f0fdf4"},
+  {id:"monitor",icon:"ti-eye",label:"Keep watching this account",desc:"Monitor for more suspicious activity",color:"#2563eb",bg:"#eff6ff"},
+  {id:"restrict",icon:"ti-player-pause",label:"Temporarily restrict the account",desc:"Pause while reviewing further",color:"#d97706",bg:"#fffbeb"},
+  {id:"escalate",icon:"ti-arrow-up",label:"Escalate to a senior analyst",desc:"Needs urgent expert review",color:"#dc2626",bg:"#fff0f0"},
+  {id:"law",icon:"ti-scale",label:"Refer to law enforcement",desc:"This requires police involvement",color:"#7c3aed",bg:"#f5f3ff"}
+];
+
+// ── State ──────────────────────────────────────────────────────
+let username = "";
+let scenario = null;
+let expandedSig = null;
+let selectedAction = null;
+let logEntries = [];
+let showLog = false;
+let caseCounter = 1001;
+
+// ── Navigation ──────────────────────────────────────────────────
+function showScreen(id) {
+  ["screen-home","screen-signals","screen-done"].forEach(s => {
+    document.getElementById(s).classList.toggle("hidden", s !== id);
+  });
+}
+function goHome() { showScreen("screen-home"); }
+function toggleLog() {
+  showLog = !showLog;
+  document.getElementById("log-panel").classList.toggle("hidden", !showLog);
+  renderLog();
+}
+
+// ── Start analysis ──────────────────────────────────────────────
+function startAnalysis() {
+  const raw = document.getElementById("ig-input").value.trim().replace(/^@/,"");
+  if (!raw) { alert("Please enter an Instagram username first."); return; }
+  username = raw;
+  // pick scenario based on first char of username (deterministic but feels random)
+  const idx = username.charCodeAt(0) % 3;
+  scenario = SCENARIOS[idx];
+  expandedSig = null;
+  selectedAction = null;
+  renderSignalsScreen();
+  showScreen("screen-signals");
+}
+
+// ── Render signals screen ──────────────────────────────────────
+function renderSignalsScreen() {
+  // step bar
+  document.getElementById("step-bar").innerHTML = renderStepBar(1);
+
+  // account header
+  const dangerCount = scenario.signals.filter(s=>s.danger).length;
+  document.getElementById("account-header").innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px">
+      <div style="width:48px;height:48px;border-radius:50%;background:${scenario.badgeBg};border:2px solid ${scenario.badgeColor};display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:${scenario.badgeColor}">
+        ${username.charAt(0).toUpperCase()}
+      </div>
+      <div>
+        <p style="font-size:16px;font-weight:600;color:var(--text)">@${username}</p>
+        <span style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:6px;background:${scenario.badgeBg};color:${scenario.badgeColor}">${scenario.badge}</span>
+      </div>
+      <div style="margin-left:auto;text-align:right">
+        <p style="font-size:22px;font-weight:700;color:${scenario.badgeColor}">${dangerCount}/${scenario.signals.length}</p>
+        <p style="font-size:11px;color:var(--text3)">danger signs</p>
+      </div>
+    </div>`;
+
+  // signals list
+  renderSignalsList();
+
+  // hide score initially
+  document.getElementById("score-section").classList.add("hidden");
+  document.getElementById("btn-show-score").classList.remove("hidden");
+}
+
+function renderSignalsList() {
+  const container = document.getElementById("signals-list");
+  container.innerHTML = scenario.signals.map((s,i) => {
+    const isOpen = expandedSig === i;
+    const openCls = isOpen ? (s.danger ? "open" : "open safe") : "";
+    return `
+    <div>
+      <button class="sig-row ${openCls}" onclick="toggleSig(${i})">
+        <div style="display:flex;gap:10px;align-items:center">
+          <i class="ti ${s.icon}" style="font-size:18px;color:${s.danger?"#dc2626":"#16a34a"}"></i>
+          <span style="font-size:13px;color:var(--text)">${s.label}</span>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
+          <span class="${s.danger?"tag-danger":"tag-safe"}">${s.danger?"⚠ Danger":"✓ Normal"}</span>
+          <i class="ti ${isOpen?"ti-chevron-up":"ti-chevron-down"}" style="font-size:13px;color:var(--text3)"></i>
+        </div>
+      </button>
+      ${isOpen ? `<div class="sig-expand ${s.danger?"":"safe"}"><strong>Why this matters:</strong> ${s.why}</div>` : ""}
+    </div>`;
+  }).join("");
+}
+
+function toggleSig(i) {
+  expandedSig = expandedSig === i ? null : i;
+  renderSignalsList();
+}
+
+// ── Show score ──────────────────────────────────────────────────
+function showScore() {
+  document.getElementById("btn-show-score").classList.add("hidden");
+  document.getElementById("score-section").classList.remove("hidden");
+  document.getElementById("step-bar").innerHTML = renderStepBar(2);
+
+  // score card
+  document.getElementById("score-card").innerHTML = `
+    <p style="font-size:13px;color:var(--text3);margin-bottom:6px">AI risk score for @${username}</p>
+    <p class="score-big" style="color:${scenario.badgeColor};margin-bottom:8px">${scenario.score}</p>
+    <p style="font-size:12px;color:var(--text3);margin-bottom:14px">out of 100</p>
+    <span class="risk-pill" style="background:${scenario.badgeColor}">${scenario.scoreLabel}</span>
+    <div style="background:#f5f5f5;border-radius:8px;padding:0.875rem 1rem;margin-top:1.25rem;text-align:left">
+      <p style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px">What the AI found:</p>
+      <p style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:8px">${scenario.summary}</p>
+      <p style="font-size:12px;color:var(--text3)">AI suggestion: <strong style="color:var(--text)">${scenario.aiSays}</strong></p>
+    </div>`;
+
+  // decision card
+  renderDecisionCard();
+  document.getElementById("score-section").scrollIntoView({behavior:"smooth"});
+}
+
+function renderDecisionCard() {
+  document.getElementById("decision-card").innerHTML = `
+    <p style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:4px"><i class="ti ti-user-check"></i> Now it's your turn</p>
+    <p style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:16px">
+      The AI gave a suggestion — but <strong>you are the decision maker.</strong> SentinelAI never restricts or bans anyone on its own. Every action requires a real person to confirm it.
+    </p>
+    ${ACTIONS.map(a => {
+      const sel = selectedAction === a.id;
+      return `<button class="action-btn ${sel?"selected":""}" onclick="selectAction('${a.id}')"
+        style="${sel?`border-color:${a.color};background:${a.bg};`:""}">
+        <i class="ti ${a.icon} action-icon" style="color:${sel?a.color:"var(--text3)"}"></i>
+        <div>
+          <p class="action-label" style="color:${sel?a.color:"var(--text)"}">${a.label}</p>
+          <p class="action-desc">${a.desc}</p>
+        </div>
+      </button>`;
+    }).join("")}
+    <textarea id="analyst-note" placeholder="Add a note about why you made this decision (optional)..."></textarea>
+    <button class="btn-primary" onclick="confirmDecision()" ${!selectedAction?"disabled":""}>
+      Confirm my decision <i class="ti ti-arrow-right"></i>
+    </button>`;
+}
+
+function selectAction(id) {
+  selectedAction = id;
+  renderDecisionCard();
+  document.getElementById("step-bar").innerHTML = renderStepBar(3);
+}
+
+function confirmDecision() {
+  if (!selectedAction) return;
+  const note = document.getElementById("analyst-note")?.value || "";
+  const action = ACTIONS.find(a => a.id === selectedAction);
+  logEntries.unshift({
+    id: `#${caseCounter++}`,
+    time: new Date().toLocaleTimeString(),
+    username,
+    risk: scenario.badge,
+    rc: scenario.badgeColor,
+    score: scenario.score,
+    aiSaid: scenario.aiSays,
+    decided: action.label,
+    note: note || "—"
+  });
+  document.getElementById("log-count").textContent = logEntries.length;
+
+  document.getElementById("done-summary").innerHTML = `
+    <p style="font-size:12px;color:var(--text2);margin-bottom:5px">Account: <strong style="color:var(--text)">@${username}</strong></p>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:5px">Risk score: <strong style="color:${scenario.badgeColor}">${scenario.score}/100 — ${scenario.badge}</strong></p>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:5px">AI suggested: ${scenario.aiSays}</p>
+    <p style="font-size:12px;color:var(--text2)">You decided: <strong style="color:var(--text)">${action.label}</strong></p>`;
+
+  showScreen("screen-done");
+  if (showLog) renderLog();
+}
+
+// ── Log ──────────────────────────────────────────────────────────
+function renderLog() {
+  const el = document.getElementById("log-content");
+  if (!logEntries.length) {
+    el.innerHTML = `<p style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--text)">Decision history</p><p style="font-size:13px;color:var(--text3)">No decisions yet.</p>`;
+    return;
+  }
+  el.innerHTML = `<p style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--text)">Decision history</p>` +
+    logEntries.map(e => `
+    <div class="log-entry">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px">
+        <strong style="color:var(--text)">${e.id}</strong>
+        <span style="padding:2px 8px;border-radius:4px;background:${e.rc}20;color:${e.rc};font-weight:600;font-size:11px">${e.risk}</span>
+        <span style="color:var(--text3);margin-left:auto">${e.time}</span>
+      </div>
+      <p style="color:var(--text2);margin-bottom:2px">@${e.username} · Score: ${e.score}/100</p>
+      <p style="color:var(--text2)">You decided: <strong style="color:var(--text)">${e.decided}</strong></p>
+    </div>`).join("");
+}
+
+// ── Step bar ──────────────────────────────────────────────────────
+function renderStepBar(active) {
+  const steps = ["Enter account","Review signals","See AI score","Decide action"];
+  return steps.map((label,i) => {
+    const n = i+1;
+    const cls = n < active ? "done" : n === active ? "active" : "inactive";
+    const lineCls = n < active ? "done" : "";
+    return `
+    <div class="step">
+      <div class="step-num ${cls}">${n < active ? "✓" : n}</div>
+      <span class="step-label ${n===active?"active":"inactive"}">${label}</span>
+    </div>
+    ${i < 3 ? `<div class="step-line ${lineCls}"></div>` : ""}`;
+  }).join("");
+}
+</script>
+</body>
+</html>
